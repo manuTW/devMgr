@@ -1,6 +1,6 @@
 #!/share/CACHEDEV1_DATA/.qpkg/container-station/bin/python
 
-import os, sys, re, argparse, glob, subprocess
+import os, sys, re, argparse, glob, subprocess, time
 
 g_tmp='/tmp/.udev.rules'
 g_ruleFile='/lib/udev/rules.d/50-udev.rules'
@@ -14,6 +14,12 @@ rule=(
 )
 
 class cAudio(object):
+	# parse /sys/class/sound to create database
+	# Out : _classDir - the card path as /sys/class/sound/cardx
+	#       _deviceDir - the device path, /sys/devices/xxxx/sound/cardx, of the card
+	#	_number - card number, None means device not present
+	#	_devDir - the dev path when it is to move out of the system
+	#	_id - the name of the card
 	def __init__(self, number):
 		self._number=None
 		self._classDir=None                  #/sys/class/sound
@@ -25,7 +31,8 @@ class cAudio(object):
 		self._classDir=os.path.abspath(classDir)
 		self._deviceDir=g_audTopDir+'/'+os.readlink(classDir)
 		self._deviceDir=os.path.abspath(self._deviceDir)
-		self._pnpNode=None
+		self._resetStart=None
+		self._resetStop=None
 		self._devDir='/dev/snd'+self._number
 		#get id, i.e. name
 		p=subprocess.Popen(['cat '+self._deviceDir+'/id'],
@@ -36,16 +43,22 @@ class cAudio(object):
 		while True:
 			dirName=os.path.dirname(devPath)
 			devPath=os.path.basename(devPath)
-			if os.path.exists(dirName+'/remove'):
-				self._pnpNode=dirName+'/remove'
-				break
+			if not self._resetStart:
+				if os.path.exists(dirName+'/reset'):
+					self._resetStart='echo 1 >'+dirName+'/reset'
+					break
+				if os.path.exists(dirName+'/authorized'):
+					self._resetStart='echo 0 >'+dirName+'/authorized'
+					self._resetStop='echo 1 >'+dirName+'/authorized'
+					break
 			if dirName == '/': break
 			devPath=dirName
 		'''
 		print self._id+' (card: '+str(self._number)+')'
 		print self._classDir
 		print self._deviceDir
-		print self._pnpNode
+		print self._resetStart
+		print self._resetStop
 		'''
 
 	#return card#, id
@@ -55,6 +68,13 @@ class cAudio(object):
 
 	# move device node between container and system path
 	def toggle(self):
+		if not self._number: return
+		doWait=False
+		if self._resetStart:
+			os.system(self._resetStart)
+			doWait=True
+		if self._resetStop: os.system(self._resetStop)
+		if doWait: time.sleep(1)
 		if os.path.exists(self._devDir):
 			print 'Move '+self._id+' to system'
 			os.system('mv '+self._devDir+'/* /dev/snd')
@@ -114,5 +134,6 @@ elif arg.cardNum:
 	if os.path.exists(g_audTopDir+'/card'+arg.cardNum):
 		obj=cAudio(arg.cardNum)
 		obj.toggle()
+
 
 	
