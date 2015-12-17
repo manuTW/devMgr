@@ -1,9 +1,10 @@
 music1:
-  image: ubuntu
+  image: music
   volumes:
-    - "/share/Public/chn:/root/Music"
+   # - "/share/Public/chn:/root/Music"
     - "/dev/snd1:/dev/snd"
-  command: "ls /root/Music"
+    - "/share/Public/devMgr/.asoundrc1:/root/.asoundrc"
+  command: "speaker-test"
 
 #docker run -it --rm -v /share/Public/chn:/root/Music -v /dev/snd1:/dev/snd music /bin/bash
-#echo 'c 116:1 rw' >/sys/fs/cgroup/devices/23230490239/allow
+#echo 'c 116:1 rw' >/sys/fs/cgroup/devices/docker/23230490239/devices.allow
