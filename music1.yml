@@ -1,0 +1,9 @@
+music1:
+  image: ubuntu
+  volumes:
+    - "/share/Public/chn:/root/Music"
+    - "/dev/snd1:/dev/snd"
+  command: "ls /root/Music"
+
+#docker run -it --rm -v /share/Public/chn:/root/Music -v /dev/snd1:/dev/snd music /bin/bash
+#echo 'c 116:1 rw' >/sys/fs/cgroup/devices/23230490239/allow
