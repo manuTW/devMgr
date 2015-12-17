@@ -39,7 +39,7 @@ class cAudio(object):
 			stdout=subprocess.PIPE, shell=True)
 		self._id=p.stdout.read().strip()
 		devPath=self._deviceDir
-		#looking for remove node
+		#looking for reset node
 		while True:
 			dirName=os.path.dirname(devPath)
 			devPath=os.path.basename(devPath)
