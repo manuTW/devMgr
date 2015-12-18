@@ -15,6 +15,7 @@ class cAudioCmd(object):
 			os.chmod(self.WPIPE_NAME, 0o777)
 			os.chmod(self.RPIPE_NAME, 0o777)
 
+
 	# todo, time limit, say if server doesn't exist
 	def _acquire(self):
 		acquired=False
@@ -36,34 +37,67 @@ class cAudioCmd(object):
 		os.system('rm -f '+self.LOCK_NAME)
 
 	# sending command to server
+	# json command array = [<command_string>, <command_arg_object>]
 	# todo, it blocks if server not present
-	def command(self, cmd=None):
+	# response
+	# json response object = {'success': <result_boolean>, 'message': <msg_string>|null, 'data': <value>|null}
+	# In : cmdArray - command in json array 
+	# Ret: server returned json object (dict)
+	def _command(self, cmdArray):
 		self._acquire()
+		response={}
 		#access pipe
 		try:
 			ppOut=open(self.WPIPE_NAME, 'wt')
-			ppOut.writelines('%s\n' %cmd)
+			ppOut.writelines('%s\n' %json.dumps(cmdArray))
 			ppOut.close()
 			ppIn=open(self.RPIPE_NAME, 'r')
-			#format = success:[0|1], message:<mesg string>, data:<data object>
-			ret=ppIn.readline()
+			ret=ppIn.readline()[:-1]
 			ppIn.close()
-			data=json.loads(ret)
-			if data['success']: print 'Success'
-			else:
-				print 'Fail: '+data['message']
-				print 'Data: '+data['data']
+			response=json.loads(ret)   #should be a dict
 		except:
 			pass
 		self._release()
+		return response
 
-#[ {"cmd":"add", } ]
+
+	# json command array = [<command_string>, <command_arg_object>]
+	# command string = "info"
+	# info_arg_obj = null
+	# Ret : response object (dict)
+	def info(self):
+		cmdList=['info']
+		cmdList.append(None)
+		return self._command(cmdList)
+
+
+	# json command array = [<command_string>, <command_arg_object>]
+	# command string = "assign"
+	# assign_arg_obj = {"card":<num>, "domain":"domain_string"}
+	# In : num - card number
+	#	   domain - system/container/VM
+	# Ret : response object (dict)
+	def assign(self, num, domain):
+		cmdList=['assign']
+		dict={}
+		dict['card']=num
+		dict['domain']=domain
+		cmdList.append(dict)
+		return self._command(cmdList)
 
 if __name__ == '__main__':
 	obj=cAudioCmd()
 	if len(sys.argv) > 1:
-		obj.command(sys.argv[1])
+		response=obj.assign(0, 'system')
 	else:
-		obj.command('add')
-
+		response=obj.info()
+	if response['success']:
+		print 'Success !'
+	else:
+		if response['message']:
+			print 'Fail: '+response['message']
+		else:
+			print 'Fail'
+		if response['data']: print str(response['data'])
+			
 
