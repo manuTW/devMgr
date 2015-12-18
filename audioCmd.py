@@ -1,16 +1,19 @@
 #!/share/CACHEDEV1_DATA/.qpkg/container-station/bin/python
 
-import sys, os, time
+import sys, os, time, json
 
 class cAudioCmd(object):
-	PIPE_NAME='/tmp/.aupp'
+	WPIPE_NAME='/tmp/.auwpp'              #client's direction
+	RPIPE_NAME='/tmp/.aurpp'
 	LOCK_NAME='/tmp/.lock.aupp'
 
 	# create pipe if not yet
 	def __init__(self):
-		if not os.path.exists(self.PIPE_NAME):
-			os.mkfifo(self.PIPE_NAME)
-			os.chmod(self.PIPE_NAME, 0o777)
+		if not os.path.exists(self.WPIPE_NAME):
+			os.mkfifo(self.WPIPE_NAME)
+			os.mkfifo(self.RPIPE_NAME)
+			os.chmod(self.WPIPE_NAME, 0o777)
+			os.chmod(self.RPIPE_NAME, 0o777)
 
 	# todo, time limit, say if server doesn't exist
 	def _acquire(self):
@@ -28,6 +31,7 @@ class cAudioCmd(object):
 					if not os.path.exists('/proc/'+ownerID):
 						os.system('rm -f '+self.LOCK_NAME)
 				rfd.close()
+
 	def _release(self):		
 		os.system('rm -f '+self.LOCK_NAME)
 
@@ -37,12 +41,23 @@ class cAudioCmd(object):
 		self._acquire()
 		#access pipe
 		try:
-			ppOut=open(self.PIPE_NAME, 'wt')
+			ppOut=open(self.WPIPE_NAME, 'wt')
 			ppOut.writelines('%s\n' %cmd)
 			ppOut.close()
+			ppIn=open(self.RPIPE_NAME, 'r')
+			#format = success:[0|1], message:<mesg string>, data:<data object>
+			ret=ppIn.readline()
+			ppIn.close()
+			data=json.loads(ret)
+			if data['success']: print 'Success'
+			else:
+				print 'Fail: '+data['message']
+				print 'Data: '+data['data']
 		except:
 			pass
 		self._release()
+
+#[ {"cmd":"add", } ]
 
 if __name__ == '__main__':
 	obj=cAudioCmd()
