@@ -87,17 +87,38 @@ class cAudioCmd(object):
 
 if __name__ == '__main__':
 	obj=cAudioCmd()
-	if len(sys.argv) > 1:
-		response=obj.assign(0, 'system')
-	else:
-		response=obj.info()
-	if response['success']:
-		print 'Success !'
-	else:
-		if response['message']:
-			print 'Fail: '+response['message']
+	stop=False
+	menu = {}
+	menu['1']='Show device info.'
+	menu['2']='Assign device to domain'
+	menu['3']='Exit'
+	while True:
+		options=menu.keys()
+		options.sort()
+		for item in options:
+			print item, menu[item]
+			
+		select=raw_input("Please select:")
+		if select == '1':
+			response=obj.info()
+		elif select == '2':
+			devNum=raw_input('Please select the device:')
+			response=obj.assign(int(devNum), 'system')
+		elif select == '3':
+			break
 		else:
-			print 'Fail'
-		if response['data']: print str(response['data'])
+			print 'Unknown command'
+			continue
+		#exam response
+		if response['success']:
+			print 'Success !'
+		else:
+			if response['message']:
+				print 'Fail: '+response['message']
+			else:
+				print 'Fail'
+			if response['data']: print str(response['data'])
+		print
+
 			
 
