@@ -34,6 +34,7 @@ class cAudio(object):
 		self._resetStart=None
 		self._resetStop=None
 		self._devDir='/dev/snd'+self._number
+		self._domain='system'
 		#get id, i.e. name
 		p=subprocess.Popen(['cat '+self._deviceDir+'/id'],
 			stdout=subprocess.PIPE, shell=True)
@@ -61,10 +62,10 @@ class cAudio(object):
 		print self._resetStop
 		'''
 
-	#return card#, id
+	#return, id, domain
 	def getInfo(self):
 		if self._number:
-			return self._number, self._id
+			return self._id, self._domain
 
 	# move device node between container and system path
 	def toggle(self):
@@ -79,15 +80,17 @@ class cAudio(object):
 			print 'Move '+self._id+' to system'
 			os.system('mv '+self._devDir+'/* /dev/snd')
 			os.system('rm -rf '+self._devDir)
+			self._domain='system'
 		else:
 			print 'Move '+self._id+' to Container'
 			os.system('mkdir '+self._devDir)
-			os.system('mv -f /dev/snd/controlC'+self._number+' '+self._devDir)
-			os.system('mv -f /dev/snd/pcmC'+self._number+'* '+self._devDir)
-			os.system('mv -f /dev/snd/hwC'+self._number+'* '+self._devDir)
-			os.system('mv -f /dev/snd/dsp'+self._number+' '+self._devDir)
-			os.system('mv -f /dev/snd/adsp'+self._number+' '+self._devDir)
-			os.system('mv -f /dev/snd/mixer'+self._number+' '+self._devDir)
+			os.system('mv -f /dev/snd/controlC'+self._number+' '+self._devDir+' 2>/dev/null')
+			os.system('mv -f /dev/snd/pcmC'+self._number+'* '+self._devDir+' 2>/dev/null')
+			os.system('mv -f /dev/snd/hwC'+self._number+'* '+self._devDir+' 2>/dev/null')
+			os.system('mv -f /dev/snd/dsp'+self._number+' '+self._devDir+' 2>/dev/null')
+			os.system('mv -f /dev/snd/adsp'+self._number+' '+self._devDir+' 2>/dev/null')
+			os.system('mv -f /dev/snd/mixer'+self._number+' '+self._devDir+' 2>/dev/null')
+			self._domain='Container'
 
 	# device gone
 	def remove(self):
@@ -128,12 +131,10 @@ def showInfo():
 
 
 #main
-arg=check_param()
-if arg.info: showInfo()
-elif arg.cardNum:
-	if os.path.exists(g_audTopDir+'/card'+arg.cardNum):
-		obj=cAudio(arg.cardNum)
-		obj.toggle()
-
-
-	
+if __name__ == '__main__':
+	arg=check_param()
+	if arg.info: showInfo()
+	elif arg.cardNum:
+		if os.path.exists(g_audTopDir+'/card'+arg.cardNum):
+			obj=cAudio(arg.cardNum)
+			obj.toggle()

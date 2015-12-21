@@ -6,6 +6,7 @@ class cAudioServer(cAudioCmd):
 	SUCCESS_RESULT={'success':True, 'message':None, 'data':None}
 	UNKNOWN_RESULT={'success':False, 'message':'Unknown', 'data':None}
 	FORMAT_ERR_RESULT={'success':False, 'message':'Command Format Error', 'data':None}
+	CARD_MISSING_ERR_RESULT={'success':False, 'message':'Card is missing', 'data':None}
 
 	# Convert a line (json array) to list for processing
 	# return a dict with keys

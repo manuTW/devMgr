@@ -6,6 +6,9 @@ class cAudioCmd(object):
 	WPIPE_NAME='/tmp/.auwpp'              #client's direction
 	RPIPE_NAME='/tmp/.aurpp'
 	LOCK_NAME='/tmp/.lock.aupp'
+	#
+	CMD_INFO='info'
+	CMD_ASSIGN='assign'
 
 	# create pipe if not yet
 	def __init__(self):
@@ -33,8 +36,10 @@ class cAudioCmd(object):
 						os.system('rm -f '+self.LOCK_NAME)
 				rfd.close()
 
+
 	def _release(self):		
 		os.system('rm -f '+self.LOCK_NAME)
+
 
 	# sending command to server
 	# json command array = [<command_string>, <command_arg_object>]
@@ -60,30 +65,95 @@ class cAudioCmd(object):
 		self._release()
 		return response
 
-
 	# json command array = [<command_string>, <command_arg_object>]
 	# command string = "info"
 	# info_arg_obj = null
+	# response dict = {'success':<bool>, 'message': <string> , 'data' : {card_num: ['card-name', 'domain'], card_num: []}
 	# Ret : response object (dict)
-	def info(self):
-		cmdList=['info']
+	def _cmdInfo(self):
+		cmdList=[self.CMD_INFO]
 		cmdList.append(None)
 		return self._command(cmdList)
+
+		
+	# json command array = [<command_string>, <command_arg_object>]
+	# command string = "assign"
+	# assign_arg_obj = {"card":<num>, "domain":"domain_string"}
+	# In : num - int card nr.
+	#      domain - string domain to assign
+	# Ret : response object (dict)
+	def _cmdAssign(self, num, domain):
+		cmdList=[self.CMD_ASSIGN]
+		dict={}
+		dict['card']=str(num)
+		dict['domain']=domain
+		cmdList.append(dict)
+		return self._command(cmdList)
+
+
+	# process info command
+	def info(self):
+		response=self._cmdInfo()
+		if type(response) is dict:
+			try:
+				if response['success']:
+					print '===== response ====='
+					dataDict=response['data']
+					for key in sorted(dataDict.keys()):
+						dataList=dataDict[key]
+						id=dataList[0]
+						domain=dataList[1]
+						print 'Card '+key+': '+id+' ('+domain+')'
+					print
+				elif response['message']:
+					print 'Error info: '+response['message']
+			except:
+				pass
+		else: print 'Response type error'
 
 
 	# json command array = [<command_string>, <command_arg_object>]
 	# command string = "assign"
 	# assign_arg_obj = {"card":<num>, "domain":"domain_string"}
-	# In : num - card number
-	#	   domain - system/container/VM
 	# Ret : response object (dict)
-	def assign(self, num, domain):
-		cmdList=['assign']
-		dict={}
-		dict['card']=num
-		dict['domain']=domain
-		cmdList.append(dict)
-		return self._command(cmdList)
+	def assign(self):
+		response=self._cmdInfo()
+		if type(response) is dict:
+			try:
+				if response['success']:
+					dataDict=response['data']
+					#dataDict.keys() = card number list
+				else: return
+			except: return
+		else: return
+		if len(dataDict.keys()) == 0:
+			print 'No sound card installed'
+			return
+		msg='Please select the device ('
+		idx=0
+		for cardNr in sorted(dataDict.keys()):
+			if idx:	msg+=', '+cardNr
+			else: msg+=cardNr
+			idx+=1
+		msg+='): '
+		num=raw_input(msg)
+		
+		if not num in dataDict.keys():
+			print 'Invalid card selected'
+			return
+		#command
+		if dataDict[num] == 'system':
+			response=self._cmdAssign(num, 'Container')
+		else:
+			response=self._cmdAssign(num, 'system')
+		if type(response) is dict:
+			try:
+				if not response['success']:
+					if response['message']:
+						print 'Error assign: '+response['message']
+			except: pass
+		else: print 'Response type error'
+
 
 if __name__ == '__main__':
 	obj=cAudioCmd()
@@ -98,12 +168,13 @@ if __name__ == '__main__':
 		for item in options:
 			print item, menu[item]
 			
-		select=raw_input("Please select:")
+		select=raw_input("Please select: ")
 		if select == '1':
-			response=obj.info()
+			obj.info()
+			continue			
 		elif select == '2':
-			devNum=raw_input('Please select the device:')
-			response=obj.assign(int(devNum), 'system')
+			obj.assign()
+			continue
 		elif select == '3':
 			break
 		else:
