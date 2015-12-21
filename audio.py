@@ -83,13 +83,14 @@ class cAudio(object):
 			self._domain='system'
 		else:
 			print 'Move '+self._id+' to Container'
-			os.system('mkdir '+self._devDir)
-			os.system('mv -f /dev/snd/controlC'+self._number+' '+self._devDir+' 2>/dev/null')
-			os.system('mv -f /dev/snd/pcmC'+self._number+'* '+self._devDir+' 2>/dev/null')
-			os.system('mv -f /dev/snd/hwC'+self._number+'* '+self._devDir+' 2>/dev/null')
-			os.system('mv -f /dev/snd/dsp'+self._number+' '+self._devDir+' 2>/dev/null')
-			os.system('mv -f /dev/snd/adsp'+self._number+' '+self._devDir+' 2>/dev/null')
-			os.system('mv -f /dev/snd/mixer'+self._number+' '+self._devDir+' 2>/dev/null')
+			cmd='mkdir '+self._devDir
+			cmd+='; mv -f /dev/snd/controlC'+self._number+' '
+			cmd+='/dev/snd/pcmC'+self._number+'* '
+			cmd+='/dev/snd/hwC'+self._number+'* '
+			cmd+='/dev/snd/dsp'+self._number+' '
+			cmd+='/dev/snd/adsp'+self._number+' '
+			cmd+='/dev/snd/mixer'+self._number+' '+self._devDir+' 2>/dev/null'
+			os.system(cmd)
 			self._domain='Container'
 
 	# device gone
